@@ -1,0 +1,224 @@
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../polymerfire/firebase-auth.html">
+<link rel="import" href="../polymerfire/firebase-app.html">
+<link rel="import" href="../polymerfire/firebase-document.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../polymer/lib/elements/dom-if.html">
+<link rel="import" href="../iron-star-rating/iron-star-rating.html">
+<link rel="import" href="../paper-toast/paper-toast.html">
+<link rel="import" href="../paper-styles/paper-styles.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../arc-install-icons/arc-install-icons.html">
+<link rel="import" href="../paper-spinner/paper-spinner-lite.html">
+
+<dom-module id="arc-reviews">
+  <template>
+    <style>
+    :host {
+      display: block;
+      @apply --paper-font-body1;
+    }
+
+    h3 {
+      @apply --paper-font-headline;
+      @apply --layout-flex;
+    }
+
+    .signin-title {
+      @apply --layout-horizontal;
+      @apply --layout-center;
+    }
+
+    .actions {
+      @apply --layout-horizontal;
+      @apply --layout-center;
+    }
+
+    .rating {
+      @apply --layout-flex;
+    }
+
+    .authorization {
+      @apply --layout-vertical;
+    }
+
+    .authorization paper-button {
+      margin-top: 12px;
+      height: 40px;
+    }
+
+    .auth-icon {
+      margin-right: 24px;
+    }
+
+    .privacy-link {
+      text-decoration: none;
+      color: rgba(0, 0, 0, 0.54);
+      margin-top: 12px;
+      margin-left: 4px;
+    }
+    </style>
+    <firebase-app auth-domain="arc-install-website.firebaseapp.com" database-url="https://arc-install-website.firebaseio.com/" api-key="[[apiKey]]"></firebase-app>
+    <firebase-auth id="auth" user="{{user}}" provider="[[provider]]" status-known="{{authKnown}}" signed-in="{{authSigned}}"></firebase-auth>
+    <firebase-document id="doc" path="/reviews/[[user.uid]]" data="{{reviewData}}" on-data-changed="_dataChanged"></firebase-document>
+    <firebase-document id="profile" path="/profile/[[user.uid]]" data="{{profileData}}"></firebase-document>
+    <paper-textarea id="content" label="Your review" value="{{reviewData.text}}"></paper-textarea>
+    <div class="actions">
+      <div class="rating">
+        <iron-star-rating value="{{reviewData.rating}}"></iron-star-rating>
+      </div>
+      <paper-button class="submit" raised on-tap="submitReview" disabled="[[!userSignedIn]]">Submit</paper-button>
+    </div>
+
+    <template is="dom-if" if="[[!userSignedIn]]">
+      <div class="authorization">
+        <div class="signin-title">
+          <h3>Sign in to review</h3>
+          <paper-spinner-lite active="[[!authKnown]]"></paper-spinner-lite>
+        </div>
+        <paper-button raised on-tap="signInGoogle">
+          <iron-icon class="auth-icon" icon="arcinstall:google"></iron-icon>
+          Sign in with Google
+        </paper-button>
+        <paper-button raised on-tap="signInGithub">
+          <iron-icon class="auth-icon" icon="arcinstall:github"></iron-icon>
+          Sign in with Github
+        </paper-button>
+        <a class="privacy-link" href="[[privacyPolicyUrl]]" target="_blank">Privacy policy</a>
+      </div>
+    </template>
+    <paper-toast id="enterToast" text="Enter your review first"></paper-toast>
+    <paper-toast id="saveErrorToast" duration="5000"></paper-toast>
+  </template>
+  <script>
+    /**
+     * `arc-reviews`
+     * Add a review module for ARC website
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class ArcReviews extends Polymer.Element {
+      static get is() { return 'arc-reviews'; }
+      static get properties() {
+        return {
+          // Firebase project API key
+          apiKey: {
+            type: String,
+            value: 'AIzaSyBgWD8jGC3Vnxn4qXORSUKxoefzz4ZYrPk'
+          },
+          // Authorization provider.
+          provider: String,
+          // Authenticated user
+          user: Object,
+          // User review data
+          reviewData: Object,
+          // User profile data
+          profileData: Object,
+          // True if the authorization data has been determined.
+          authKnown: {
+            type: Boolean,
+            value: false
+          },
+          // True if `firebase-auth` says that the user is signed in.
+          authSigned: Boolean,
+          // True when auth status is known and user is signed in.
+          userSignedIn: {
+            type: Boolean,
+            value: false,
+            computed: '_computeUserSigned(authKnown, authSigned)'
+          },
+          // Link to a privacy policy document.
+          privacyPolicyUrl: {
+            type: String
+          }
+        };
+      }
+      // Computes if user is signed in.
+      _computeUserSigned(authKnown, authSigned) {
+        return authKnown && authSigned;
+      }
+      // Signs in via Google
+      signInGoogle() {
+        this.provider = 'google';
+        this._signIn();
+      }
+      // Signs in via GitHub
+      signInGithub() {
+        this.provider = 'github';
+        this._signIn();
+      }
+      // Signs user in via selected provider
+      _signIn() {
+        this.$.auth.signInWithPopup()
+        .then(() => this._checkAccountInfo())
+        .catch(error => {
+          this.$.saveErrorToast.text = 'Authorization unavailable. ' + error.message;
+          this.$.saveErrorToast.opened = true;
+        });
+      }
+
+      signOut() {
+        this.$.auth.signOut();
+      }
+
+      // Saves review in the datastore.
+      submitReview() {
+        var data = this.reviewData;
+        if (!data.text || !data.rating) {
+          this.$.enterToast.opened = true;
+          return;
+        }
+        data.updated = Date.now();
+        this.$.doc.saveValue('/reviews', this.user.uid)
+        .catch(error => {
+          this.$.saveErrorToast.text = 'Unable to save your review. ' + error.message;
+          this.$.saveErrorToast.opened = true;
+        });
+      }
+      /**
+       * Fix for the textarea label position when value change via JS.
+       */
+      _dataChanged(e) {
+        if (!e.detail.value || !e.detail.value.text) {
+          return;
+        }
+        Polymer.RenderStatus.afterNextRender(this, () => {
+          this.$.content.inputElement.fire('bind-value-changed');
+        });
+      }
+      /**
+       * Checks if user profile is created.
+       */
+      _checkAccountInfo() {
+        return this.$.profile.transactionsComplete
+        .then(() => {
+          let up = this.profileData;
+          if (!up || !up.displayName) {
+            return this._createProfile();
+          }
+        });
+      }
+      /**
+       * Creates user profile.
+       */
+      _createProfile() {
+        var user = this.$.auth.user;
+        var data = {
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        };
+        this.set('profileData', data);
+        return this.$.profile.transactionsComplete
+        .catch(error => {
+          this.$.saveErrorToast.text = 'Unable to save your data. ' + error.message;
+          this.$.saveErrorToast.opened = true;
+        });
+      }
+    }
+    window.customElements.define(ArcReviews.is, ArcReviews);
+  </script>
+</dom-module>

@@ -1,0 +1,26 @@
+{
+  "name": "arc-reviews",
+  "version": "0.0.1",
+  "description": "Add a review module for ARC website ",
+  "main": "arc-reviews.html",
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.0.0",
+    "polymerfire": "firebase/polymerfire#^2.2.1",
+    "paper-button": "PolymerElements/paper-button#^2.0.0",
+    "paper-input": "PolymerElements/paper-input#^2.0.2",
+    "iron-star-rating": "chadweimer/iron-star-rating#^2.0.0",
+    "paper-toast": "PolymerElements/paper-toast#^2.0.0",
+    "iron-flex-layout": "PolymerElements/iron-flex-layout#^2.0.0",
+    "iron-icon": "PolymerElements/iron-icon#^2.0.1",
+    "paper-spinner": "PolymerElements/paper-spinner#^2.0.0",
+    "arc-install-icons": "advanced-rest-client/arc-install-icons#^0.0.1"
+  },
+  "devDependencies": {
+    "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^2.0.0",
+    "web-component-tester": "Polymer/web-component-tester#^6.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.0"
+  },
+  "resolutions": {
+    "polymer": "^2.0.0"
+  }
+}

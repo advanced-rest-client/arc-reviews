@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>arc-reviews test</title>
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../arc-reviews.html">
+  </head>
+  <body>
+
+    <test-fixture id="BasicTestFixture">
+      <template>
+        <arc-reviews></arc-reviews>
+      </template>
+    </test-fixture>
+
+    <script>
+      /* global fixture, assert */
+      suite('arc-reviews', () => {
+
+        var element;
+        suiteSetup(function() {
+          element = fixture('BasicTestFixture');
+        });
+
+        test('userSignedIn is false by default', () => {
+          assert.isFalse(element.userSignedIn);
+        });
+
+        test('authKnown is false by default', () => {
+          assert.isFalse(element.authKnown);
+        });
+
+        test('submit button is disabled', () => {
+          var submit = element.root.querySelector('.submit');
+          assert.isTrue(submit.disabled);
+        });
+      });
+    </script>
+
+  </body>
+</html>
